@@ -1,0 +1,70 @@
+version: '3.9'
+
+# Network for Laravel
+networks:
+  web_network:
+    name: appraisalprice
+    driver: bridge
+
+services:
+
+  # PHP App Service 
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: appraisalprice-app
+    container_name: appraisalprice_app
+    restart: always
+    volumes:
+      - ./src:/var/www
+    networks:
+      - web_network
+
+  # MySQL Database Service
+  db:
+    image: mysql:8.0
+    container_name: appraisalprice_mysql
+    volumes:
+      - ./mysql/data:/var/lib/mysql
+    environment:
+      - MYSQL_ROOT_PASSWORD=password1234
+      - MYSQL_DATABASE=appraisalprice_db
+      - MYSQL_USER=admin
+      - MYSQL_PASSWORD=password1234
+    platform: linux/amd64
+    ports:
+      - "3306:3306"
+    restart: always
+    networks:
+      - web_network
+
+  # Nginx Web Server Service
+  nginx:
+    image: nginx:1.19.8-alpine
+    container_name: appraisalprice_nginx
+    volumes:
+      - ./src:/var/www
+      - ./nginx/conf:/etc/nginx/conf.d
+    ports:
+      - "8000:80"
+    restart: always
+    networks:
+      - web_network
+  
+  # phpMyAdmin (MySQL managment)
+  phpmyadmin:
+    image: phpmyadmin:5.1.0-apache
+    depends_on:
+      - db
+    container_name: appraisalprice_phpmyadmin
+    environment:
+      PMA_HOST: db
+      PMA_PORT: 3306
+      PMA_USER: admin
+      PMA_PASSWORD: password1234
+    ports:
+      - 8080:80
+    restart: always
+    networks:
+      - web_network
